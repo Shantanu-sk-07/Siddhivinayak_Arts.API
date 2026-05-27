@@ -1,6 +1,6 @@
 package com.suraj.MurtiSystem.controller;
 
-import com.suraj.MurtiSystem.dto.request.CustomerUpdateRequestDto;
+import com.suraj.MurtiSystem.dto.request.CustomerRequestDto;
 import com.suraj.MurtiSystem.dto.response.ApiResponse;
 import com.suraj.MurtiSystem.dto.response.BookingResponseDto;
 import com.suraj.MurtiSystem.dto.response.CustomerResponseDto;
@@ -11,7 +11,7 @@ import com.suraj.MurtiSystem.repository.GanpatiRepository;
 import com.suraj.MurtiSystem.repository.UserRepository;
 import com.suraj.MurtiSystem.service.BookingService;
 import com.suraj.MurtiSystem.service.PaymentService;
-import com.suraj.MurtiSystem.service.UserService;
+import com.suraj.MurtiSystem.service.CustomerService;
 import com.suraj.MurtiSystem.service.WhatsAppService;
 import com.suraj.MurtiSystem.config.JwtTokenProvider;
 import jakarta.validation.Valid;
@@ -22,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +35,7 @@ import java.util.Optional;
 public class CustomerController {
 
     @Autowired
-    private UserService userService;
+    private CustomerService customerService;  // Changed from UserService to CustomerService
 
     @Autowired
     private BookingService bookingService;
@@ -57,14 +58,14 @@ public class CustomerController {
     @GetMapping("/profile")
     public ApiResponse<CustomerResponseDto> getProfile(@RequestHeader(value = "Authorization", required = false) String token) {
         String userId = getUserIdFromToken(token);
-        return userService.getCustomerById(userId);
+        return customerService.getCustomerById(userId);
     }
 
     @PutMapping("/profile")
     public ApiResponse<CustomerResponseDto> updateProfile(@RequestHeader(value = "Authorization", required = false) String token,
-                                                          @Valid @RequestBody CustomerUpdateRequestDto request) {
+                                                          @Valid @RequestBody CustomerRequestDto request) {
         String userId = getUserIdFromToken(token);
-        return userService.updateCustomer(userId, request);
+        return customerService.updateCustomer(userId, request);
     }
 
     @GetMapping("/bookings")
@@ -177,7 +178,7 @@ public class CustomerController {
     @GetMapping("/summary")
     public ApiResponse<Map<String, Object>> getCustomerSummary(@RequestHeader(value = "Authorization", required = false) String token) {
         String userId = getUserIdFromToken(token);
-        Map<String, Object> summary = userService.getCustomerSummary(userId);
+        Map<String, Object> summary = customerService.getCustomerSummary(userId);
         return ApiResponse.success(summary);
     }
 

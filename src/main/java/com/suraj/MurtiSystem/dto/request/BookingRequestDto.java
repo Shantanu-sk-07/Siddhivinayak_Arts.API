@@ -10,4 +10,8 @@ public class BookingRequestDto {
     private String ganpatiId;
 
     private Double advancePaid = 0.0;
+
+    // Status field from BookingUpdateRequestDto
+    @NotBlank(message = "Status is required")
+    private String status;
 }

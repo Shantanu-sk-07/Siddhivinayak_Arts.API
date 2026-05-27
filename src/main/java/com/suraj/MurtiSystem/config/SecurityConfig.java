@@ -13,7 +13,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @EnableWebSecurity
@@ -43,8 +42,9 @@ public class SecurityConfig {
                                 "/static/**"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
-                        .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "SUPER_ADMIN")
-                        .requestMatchers("/api/customer/**").hasAnyRole("CUSTOMER", "STAFF", "SUPER_ADMIN")
+                        // Staff endpoints now accessible by SUPER_ADMIN only
+                        .requestMatchers("/api/staff/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/customer/**").hasAnyRole("CUSTOMER", "SUPER_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

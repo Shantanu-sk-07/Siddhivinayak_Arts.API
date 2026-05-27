@@ -40,6 +40,6 @@ public class User {
     private LocalDateTime createdAt;
 
     public enum UserRole {
-        SUPER_ADMIN, STAFF, CUSTOMER
+        SUPER_ADMIN, CUSTOMER  // STAFF removed
     }
 }

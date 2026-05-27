@@ -19,4 +19,7 @@ public class CustomerRequestDto {
 
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
+
+    // Fields from CustomerUpdateRequestDto (optional for updates)
+    private Boolean isActive;
 }

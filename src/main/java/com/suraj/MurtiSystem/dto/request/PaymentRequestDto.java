@@ -20,4 +20,8 @@ public class PaymentRequestDto {
     private String transactionId;
 
     private MultipartFile screenshot;
+
+    // Field from PaymentUpdateRequestDto
+    @NotBlank(message = "Status is required")
+    private String status;
 }

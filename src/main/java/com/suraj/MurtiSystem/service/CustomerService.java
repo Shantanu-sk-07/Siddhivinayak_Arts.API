@@ -1,18 +1,19 @@
 package com.suraj.MurtiSystem.service;
 
-import com.suraj.MurtiSystem.dto.request.CustomerUpdateRequestDto;
+import com.suraj.MurtiSystem.dto.request.CustomerRequestDto;
 import com.suraj.MurtiSystem.dto.response.ApiResponse;
 import com.suraj.MurtiSystem.dto.response.CustomerResponseDto;
 import com.suraj.MurtiSystem.entity.User;
 import com.suraj.MurtiSystem.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class UserService {
+public class CustomerService {
 
     @Autowired
     private UserRepository userRepository;
@@ -25,7 +26,7 @@ public class UserService {
         return ApiResponse.success(mapToResponseDto(userOpt.get()));
     }
 
-    public ApiResponse<CustomerResponseDto> updateCustomer(String userId, CustomerUpdateRequestDto request) {
+    public ApiResponse<CustomerResponseDto> updateCustomer(String userId, CustomerRequestDto request) {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             return ApiResponse.error("User not found");
@@ -44,6 +45,7 @@ public class UserService {
         if (request.getIsActive() != null) {
             user.setIsActive(request.getIsActive());
         }
+        // Password is not updated here (should be handled separately for security)
 
         User saved = userRepository.save(user);
         return ApiResponse.success(mapToResponseDto(saved), "Profile updated successfully");
@@ -69,5 +71,4 @@ public class UserService {
         dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }
-
 }
