@@ -39,7 +39,7 @@ public class Ganpati {
 
     @ElementCollection
     @CollectionTable(name = "ganpati_images", joinColumns = @JoinColumn(name = "ganpati_id"))
-    @Column(name = "image_url")
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private List<String> images = new ArrayList<>();
 
     @Column(nullable = false)
@@ -56,6 +56,13 @@ public class Ganpati {
 
     @Column(nullable = false)
     private Boolean isActive = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_user_id")
+    private User createdBy;
+
+    @Column(name = "created_by_user_email")
+    private String createdByUserEmail;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

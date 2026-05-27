@@ -4,8 +4,9 @@ import com.suraj.MurtiSystem.dto.request.LoginRequest;
 import com.suraj.MurtiSystem.dto.request.RegisterRequest;
 import com.suraj.MurtiSystem.dto.response.ApiResponse;
 import com.suraj.MurtiSystem.dto.response.LoginResponse;
-import com.suraj.MurtiSystem.entity.User;
+import com.suraj.MurtiSystem.dto.response.RegisterResponseDto;
 import com.suraj.MurtiSystem.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,12 +19,12 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
     }
 
     @PostMapping("/register")
-    public ApiResponse<User> register(@RequestBody RegisterRequest request) {
+    public ApiResponse<RegisterResponseDto> register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
     }
 }

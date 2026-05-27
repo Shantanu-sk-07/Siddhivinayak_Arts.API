@@ -1,6 +1,5 @@
 package com.suraj.MurtiSystem.config;
 
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,7 +10,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,14 +46,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = header.substring(7);
 
             if (jwtProvider.validateToken(token)) {
-                String userId = jwtProvider.getUserIdFromToken(token);
+                String email = jwtProvider.getEmailFromToken(token);
                 String role = jwtProvider.getRoleFromToken(token);
 
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
 
                 UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(userId, null, authorities);
+                        new UsernamePasswordAuthenticationToken(email, null, authorities);
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }

@@ -1,15 +1,18 @@
 package com.suraj.MurtiSystem.controller;
 
+import com.suraj.MurtiSystem.dto.request.GanpatiRequestDto;
+import com.suraj.MurtiSystem.dto.request.StaffRequestDto;
 import com.suraj.MurtiSystem.dto.response.ApiResponse;
-import com.suraj.MurtiSystem.entity.Booking;
-import com.suraj.MurtiSystem.entity.Ganpati;
-import com.suraj.MurtiSystem.entity.Payment;
-import com.suraj.MurtiSystem.entity.Staff;
-import com.suraj.MurtiSystem.repository.BookingRepository;
+import com.suraj.MurtiSystem.dto.response.BookingResponseDto;
+import com.suraj.MurtiSystem.dto.response.GanpatiResponseDto;
+import com.suraj.MurtiSystem.dto.response.PaymentResponseDto;
+import com.suraj.MurtiSystem.dto.response.StaffResponseDto;
+import com.suraj.MurtiSystem.entity.User;
 import com.suraj.MurtiSystem.service.BookingService;
 import com.suraj.MurtiSystem.service.GanpatiService;
 import com.suraj.MurtiSystem.service.PaymentService;
 import com.suraj.MurtiSystem.service.StaffService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,22 +35,19 @@ public class AdminController {
     @Autowired
     private StaffService staffService;
 
-    @Autowired
-    private BookingRepository bookingRepository;
-
-    @PostMapping("/ganpati")
-    public ApiResponse<Ganpati> createGanpati(
-            @RequestPart("ganpati") Ganpati ganpati,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        return ganpatiService.createGanpati(ganpati, images);
+    @GetMapping("/ganpati")
+    public ApiResponse<List<GanpatiResponseDto>> getAllGanpati() {
+        return ganpatiService.getAllGanpati();
     }
 
-    @PutMapping("/ganpati/{id}")
-    public ApiResponse<Ganpati> updateGanpati(
-            @PathVariable String id,
-            @RequestPart("ganpati") Ganpati ganpati,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        return ganpatiService.updateGanpati(id, ganpati, images);
+    @PostMapping(value = "/ganpati", consumes = "multipart/form-data")
+    public ApiResponse<GanpatiResponseDto> createGanpati(@Valid @ModelAttribute GanpatiRequestDto request) {
+        return ganpatiService.createGanpati(request);
+    }
+
+    @PutMapping(value = "/ganpati/{id}", consumes = "multipart/form-data")
+    public ApiResponse<GanpatiResponseDto> updateGanpati(@PathVariable String id, @Valid @ModelAttribute GanpatiRequestDto request) {
+        return ganpatiService.updateGanpati(id, request);
     }
 
     @DeleteMapping("/ganpati/{id}")
@@ -56,52 +56,57 @@ public class AdminController {
     }
 
     @GetMapping("/bookings")
-    public ApiResponse<List<Booking>> getAllBookings() {
-        return ApiResponse.success(bookingRepository.findAll());
+    public ApiResponse<List<BookingResponseDto>> getAllBookings() {
+        return bookingService.getAllBookings();
     }
 
     @PostMapping("/bookings/{id}/approve")
-    public ApiResponse<Booking> approveBooking(@PathVariable String id) {
+    public ApiResponse<BookingResponseDto> approveBooking(@PathVariable String id) {
         return bookingService.approveBooking(id);
     }
 
     @PostMapping("/bookings/{id}/reject")
-    public ApiResponse<Booking> rejectBooking(@PathVariable String id) {
-        return bookingService.updateBookingStatus(id, "REJECTED");
+    public ApiResponse<BookingResponseDto> rejectBooking(@PathVariable String id) {
+        return bookingService.rejectBooking(id);
     }
 
     @PutMapping("/bookings/{id}/status")
-    public ApiResponse<Booking> updateBookingStatus(@PathVariable String id, @RequestBody String status) {
+    public ApiResponse<BookingResponseDto> updateBookingStatus(@PathVariable String id, @RequestBody String status) {
         return bookingService.updateBookingStatus(id, status);
     }
 
     @GetMapping("/payments/pending")
-    public ApiResponse<List<Payment>> getPendingPayments() {
+    public ApiResponse<List<PaymentResponseDto>> getPendingPayments() {
         return paymentService.getPendingPayments();
     }
 
     @PostMapping("/payments/{id}/verify")
-    public ApiResponse<Payment> verifyPayment(@PathVariable String id, @RequestBody String status) {
+    public ApiResponse<PaymentResponseDto> verifyPayment(@PathVariable String id, @RequestBody String status) {
         return paymentService.verifyPayment(id, status, "admin_id");
     }
 
     @GetMapping("/staff")
-    public ApiResponse<List<Staff>> getAllStaff() {
+    public ApiResponse<List<StaffResponseDto>> getAllStaff() {
         return staffService.getAllStaff();
     }
 
     @PostMapping("/staff")
-    public ApiResponse<Staff> addStaff(@RequestBody Staff staff) {
-        return staffService.addStaff(staff);
+    public ApiResponse<StaffResponseDto> addStaff(@Valid @RequestBody StaffRequestDto request) {
+        return staffService.addStaff(request);
     }
 
     @PutMapping("/staff/{id}")
-    public ApiResponse<Staff> updateStaff(@PathVariable String id, @RequestBody Staff staff) {
-        return staffService.updateStaff(id, staff);
+    public ApiResponse<StaffResponseDto> updateStaff(@PathVariable String id, @Valid @RequestBody StaffRequestDto request) {
+        return staffService.updateStaff(id, request);
     }
 
     @DeleteMapping("/staff/{id}")
     public ApiResponse<Void> deleteStaff(@PathVariable String id) {
         return staffService.deleteStaff(id);
+    }
+
+    @GetMapping("/customers")
+    public ApiResponse<List<User>> getAllCustomers() {
+        return staffService.getAllCustomers();
     }
 }

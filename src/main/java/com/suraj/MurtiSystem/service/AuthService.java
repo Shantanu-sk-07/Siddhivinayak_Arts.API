@@ -4,6 +4,7 @@ import com.suraj.MurtiSystem.dto.request.LoginRequest;
 import com.suraj.MurtiSystem.dto.request.RegisterRequest;
 import com.suraj.MurtiSystem.dto.response.ApiResponse;
 import com.suraj.MurtiSystem.dto.response.LoginResponse;
+import com.suraj.MurtiSystem.dto.response.RegisterResponseDto;
 import com.suraj.MurtiSystem.entity.User;
 import com.suraj.MurtiSystem.repository.UserRepository;
 import com.suraj.MurtiSystem.config.JwtTokenProvider;
@@ -55,7 +56,7 @@ public class AuthService {
         return ApiResponse.success(response, "Login successful");
     }
 
-    public ApiResponse<User> register(RegisterRequest request) {
+    public ApiResponse<RegisterResponseDto> register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             return ApiResponse.error("Email already registered");
         }
@@ -73,8 +74,16 @@ public class AuthService {
         user.setIsActive(true);
 
         User savedUser = userRepository.save(user);
-        savedUser.setPassword(null);
 
-        return ApiResponse.success(savedUser, "Registration successful");
+        RegisterResponseDto response = new RegisterResponseDto(
+                savedUser.getId(),
+                savedUser.getName(),
+                savedUser.getEmail(),
+                savedUser.getPhone(),
+                savedUser.getRole().name(),
+                "Registration successful"
+        );
+
+        return ApiResponse.success(response, "Registration successful");
     }
 }

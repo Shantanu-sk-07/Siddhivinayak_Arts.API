@@ -16,6 +16,7 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
     List<Booking> findByCustomer(User customer);
     List<Booking> findByStatus(Booking.BookingStatus status);
     Optional<Booking> findByBookingId(String bookingId);
+    void deleteByGanpatiId(String ganpatiId);
 
     @Query("SELECT b FROM Booking b WHERE b.customer.id = :customerId ORDER BY b.createdAt DESC")
     List<Booking> findByCustomerIdOrderByCreatedAtDesc(@Param("customerId") String customerId);

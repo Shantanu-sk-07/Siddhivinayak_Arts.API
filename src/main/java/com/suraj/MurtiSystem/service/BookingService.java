@@ -1,6 +1,7 @@
 package com.suraj.MurtiSystem.service;
 
 import com.suraj.MurtiSystem.dto.response.ApiResponse;
+import com.suraj.MurtiSystem.dto.response.BookingResponseDto;
 import com.suraj.MurtiSystem.entity.Booking;
 import com.suraj.MurtiSystem.entity.Ganpati;
 import com.suraj.MurtiSystem.entity.User;
@@ -10,8 +11,8 @@ import com.suraj.MurtiSystem.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class BookingService {
@@ -25,16 +26,38 @@ public class BookingService {
     @Autowired
     private UserRepository userRepository;
 
-    public ApiResponse<List<Booking>> getCustomerBookings(String customerId) {
-        Optional<User> customer = userRepository.findById(customerId);
-        if (customer.isEmpty()) {
-            return ApiResponse.error("Customer not found");
-        }
-        List<Booking> bookings = bookingRepository.findByCustomer(customer.get());
-        return ApiResponse.success(bookings);
+    @Autowired
+    private WhatsAppService whatsAppService;
+
+    public ApiResponse<List<BookingResponseDto>> getAllBookings() {
+        List<Booking> bookings = bookingRepository.findAll();
+        List<BookingResponseDto> responseList = bookings.stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+        return ApiResponse.success(responseList);
     }
 
-    public ApiResponse<Booking> requestBooking(String customerId, String ganpatiId) {
+    public ApiResponse<List<BookingResponseDto>> getCustomerBookings(String customerId) {
+        Optional<User> customer = userRepository.findById(customerId);
+        if (customer.isEmpty()) {
+            return ApiResponse.success(List.of());
+        }
+        List<Booking> bookings = bookingRepository.findByCustomer(customer.get());
+        List<BookingResponseDto> responseList = bookings.stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+        return ApiResponse.success(responseList);
+    }
+
+    public ApiResponse<BookingResponseDto> getBookingById(String bookingId) {
+        Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
+        if (bookingOpt.isEmpty()) {
+            return ApiResponse.error("Booking not found");
+        }
+        return ApiResponse.success(mapToResponseDto(bookingOpt.get()));
+    }
+
+    public ApiResponse<BookingResponseDto> requestBooking(String customerId, String ganpatiId) {
         Optional<User> customerOpt = userRepository.findById(customerId);
         Optional<Ganpati> ganpatiOpt = ganpatiRepository.findById(ganpatiId);
 
@@ -51,13 +74,6 @@ public class BookingService {
             return ApiResponse.error("No slots available");
         }
 
-        boolean alreadyBooked = bookingRepository.existsByCustomerAndGanpatiAndStatusNot(
-                customerOpt.get(), ganpati, Booking.BookingStatus.REJECTED);
-
-        if (alreadyBooked) {
-            return ApiResponse.error("You already have a booking request for this Ganpati");
-        }
-
         Booking booking = new Booking();
         booking.setGanpati(ganpati);
         booking.setCustomer(customerOpt.get());
@@ -66,16 +82,27 @@ public class BookingService {
         booking.setRemainingAmount(ganpati.getPrice());
         booking.setStatus(Booking.BookingStatus.PENDING_REQUEST);
         booking.setBookingDate(LocalDateTime.now());
+        booking.setBookingId("BK" + System.currentTimeMillis());
 
         Booking saved = bookingRepository.save(booking);
 
         ganpati.setAvailableSlots(ganpati.getAvailableSlots() - 1);
         ganpatiRepository.save(ganpati);
 
-        return ApiResponse.success(saved, "Booking request submitted successfully");
+        String message = whatsAppService.getBookingRequestMessage(
+                customerOpt.get().getName(),
+                customerOpt.get().getPhone(),
+                ganpati.getName(),
+                ganpati.getPrice(),
+                saved.getBookingId()
+        );
+        String whatsappLink = whatsAppService.generateWhatsAppLink(message);
+        System.out.println("📱 WhatsApp Admin Link: " + whatsappLink);
+
+        return ApiResponse.success(mapToResponseDto(saved), "Booking request submitted successfully");
     }
 
-    public ApiResponse<Booking> approveBooking(String bookingId) {
+    public ApiResponse<BookingResponseDto> approveBooking(String bookingId) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
         if (bookingOpt.isEmpty()) {
             return ApiResponse.error("Booking not found");
@@ -85,10 +112,38 @@ public class BookingService {
         booking.setStatus(Booking.BookingStatus.APPROVED);
         Booking saved = bookingRepository.save(booking);
 
-        return ApiResponse.success(saved, "Booking approved successfully");
+        String adminMessage = whatsAppService.getBookingApprovedMessage(
+                booking.getCustomer().getName(),
+                booking.getGanpati().getName(),
+                saved.getBookingId(),
+                saved.getTotalAmount() * 0.3,
+                booking.getCustomer().getPhone()
+        );
+        String adminWhatsappLink = whatsAppService.generateWhatsAppLink(adminMessage);
+        System.out.println("📱 WhatsApp Admin Link (Approved): " + adminWhatsappLink);
+
+        return ApiResponse.success(mapToResponseDto(saved), "Booking approved successfully");
     }
 
-    public ApiResponse<Booking> updateBookingStatus(String bookingId, String status) {
+    public ApiResponse<BookingResponseDto> rejectBooking(String bookingId) {
+        Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
+        if (bookingOpt.isEmpty()) {
+            return ApiResponse.error("Booking not found");
+        }
+
+        Booking booking = bookingOpt.get();
+
+        Ganpati ganpati = booking.getGanpati();
+        ganpati.setAvailableSlots(ganpati.getAvailableSlots() + 1);
+        ganpatiRepository.save(ganpati);
+
+        booking.setStatus(Booking.BookingStatus.REJECTED);
+        Booking saved = bookingRepository.save(booking);
+
+        return ApiResponse.success(mapToResponseDto(saved), "Booking rejected");
+    }
+
+    public ApiResponse<BookingResponseDto> updateBookingStatus(String bookingId, String status) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
         if (bookingOpt.isEmpty()) {
             return ApiResponse.error("Booking not found");
@@ -98,24 +153,71 @@ public class BookingService {
         booking.setStatus(Booking.BookingStatus.valueOf(status));
         Booking saved = bookingRepository.save(booking);
 
-        return ApiResponse.success(saved, "Booking status updated");
+        return ApiResponse.success(mapToResponseDto(saved), "Booking status updated");
     }
 
-    public ApiResponse<Booking> completePickup(String bookingId) {
+    public ApiResponse<List<BookingResponseDto>> getTodaysPickups() {
+        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
+
+        List<Booking> pickups = bookingRepository.findByStatusAndBookingDateBetween(
+                Booking.BookingStatus.CONFIRMED, startOfDay, endOfDay);
+
+        List<BookingResponseDto> responseList = pickups.stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+        return ApiResponse.success(responseList);
+    }
+
+    public ApiResponse<Map<String, Object>> getQRCodeData(String bookingId) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
         if (bookingOpt.isEmpty()) {
             return ApiResponse.error("Booking not found");
         }
 
         Booking booking = bookingOpt.get();
-        if (booking.getRemainingAmount() > 0) {
-            return ApiResponse.error("Please complete pending payment first");
+
+        if (booking.getStatus() != Booking.BookingStatus.CONFIRMED &&
+                booking.getStatus() != Booking.BookingStatus.PICKUP_COMPLETED) {
+            return ApiResponse.error("QR code is only available for confirmed bookings");
         }
 
-        booking.setStatus(Booking.BookingStatus.PICKUP_COMPLETED);
-        booking.setPickupDate(LocalDateTime.now());
-        Booking saved = bookingRepository.save(booking);
+        Map<String, Object> qrData = new HashMap<>();
+        qrData.put("bookingId", booking.getBookingId());
+        qrData.put("customerName", booking.getCustomer().getName());
+        qrData.put("customerPhone", booking.getCustomer().getPhone());
+        qrData.put("ganpatiName", booking.getGanpati().getName());
+        qrData.put("totalAmount", booking.getTotalAmount());
+        qrData.put("advancePaid", booking.getAdvancePaid());
+        qrData.put("remainingAmount", booking.getRemainingAmount());
+        qrData.put("status", booking.getStatus().name());
+        qrData.put("bookingDate", booking.getBookingDate());
+        qrData.put("timestamp", LocalDateTime.now().toString());
 
-        return ApiResponse.success(saved, "Pickup completed successfully");
+        return ApiResponse.success(qrData);
+    }
+
+    private BookingResponseDto mapToResponseDto(Booking booking) {
+        BookingResponseDto dto = new BookingResponseDto();
+        dto.setId(booking.getId());
+        dto.setBookingId(booking.getBookingId());
+        if (booking.getGanpati() != null) {
+            dto.setGanpatiId(booking.getGanpati().getId());
+            dto.setGanpatiName(booking.getGanpati().getName());
+        }
+        if (booking.getCustomer() != null) {
+            dto.setCustomerId(booking.getCustomer().getId());
+            dto.setCustomerName(booking.getCustomer().getName());
+            dto.setCustomerPhone(booking.getCustomer().getPhone());
+        }
+        dto.setTotalAmount(booking.getTotalAmount());
+        dto.setAdvancePaid(booking.getAdvancePaid());
+        dto.setRemainingAmount(booking.getRemainingAmount());
+        dto.setStatus(booking.getStatus().name());
+        dto.setQrCode(booking.getQrCode());
+        dto.setBookingDate(booking.getBookingDate());
+        dto.setPickupDate(booking.getPickupDate());
+        dto.setCreatedAt(booking.getCreatedAt());
+        return dto;
     }
 }
