@@ -8,30 +8,29 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "owners")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class Owner {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
-    private String name;
-
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
-
-    @Column(unique = true, nullable = false)
-    private String phone;
 
     @Column(nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRole role;
+    private String name;
+
+    @Column(nullable = false)
+    private String phone;
+
+    @Column(nullable = false)
+    private String role = "SUPER_ADMIN";
 
     @Column(nullable = false)
     private Boolean isActive = true;
@@ -39,7 +38,5 @@ public class User {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    public enum UserRole {
-        SUPER_ADMIN, CUSTOMER  // STAFF removed
-    }
+    private LocalDateTime updatedAt;
 }

@@ -10,6 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,15 +32,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
+        // Public endpoints — no token required
         if (path.startsWith("/api/auth") ||
                 path.startsWith("/api/ganpati") ||
                 path.startsWith("/api/contact") ||
+                path.startsWith("/api/customers") ||
                 path.startsWith("/swagger-ui") ||
                 path.startsWith("/v3/api-docs")) {
             chain.doFilter(request, response);
             return;
         }
 
+        // All other endpoints require a valid Bearer token
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {

@@ -3,13 +3,14 @@ package com.suraj.MurtiSystem.config;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import com.suraj.MurtiSystem.entity.User;
-import com.suraj.MurtiSystem.repository.UserRepository;
+import com.suraj.MurtiSystem.entity.Owner;
+import com.suraj.MurtiSystem.repository.OwnerRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Calendar;
 import java.util.Date;
 
 @Component
@@ -18,13 +19,10 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expiration}")
-    private long expiration;
+    private final OwnerRepository ownerRepository;
 
-    private final UserRepository userRepository;
-
-    public JwtTokenProvider(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public JwtTokenProvider(OwnerRepository ownerRepository) {
+        this.ownerRepository = ownerRepository;
     }
 
     private SecretKey getSigningKey() {
@@ -32,56 +30,49 @@ public class JwtTokenProvider {
     }
 
     public String generateToken(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
+        Owner owner = ownerRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Owner not found"));
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(9999, Calendar.DECEMBER, 31, 23, 59, 59);
 
         return Jwts.builder()
                 .setSubject(email)
                 .claim("email", email)
-                .claim("role", user.getRole().name())
-                .claim("userId", user.getId())
-                .claim("name", user.getName())
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
+                .claim("role", owner.getRole())
+                .claim("userId", owner.getId())
+                .claim("name", owner.getName())
+                .setIssuedAt(new Date())
+                .setExpiration(calendar.getTime())
                 .signWith(getSigningKey())
                 .compact();
     }
 
     public String getEmailFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
-    }
-
-    public String getUserIdFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.get("userId", String.class);
-    }
-
-    public String getRoleFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.get("role", String.class);
-    }
-
-    public Claims getAllClaimsFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
-                .getBody();
+                .getBody()
+                .getSubject();
+    }
+
+    public String getUserIdFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", String.class);
+    }
+
+    public String getRoleFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
     }
 
     public boolean validateToken(String token) {
@@ -95,5 +86,4 @@ public class JwtTokenProvider {
             return false;
         }
     }
-
 }

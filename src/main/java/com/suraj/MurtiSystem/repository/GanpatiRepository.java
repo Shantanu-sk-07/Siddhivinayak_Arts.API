@@ -3,7 +3,6 @@ package com.suraj.MurtiSystem.repository;
 import com.suraj.MurtiSystem.entity.Ganpati;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
@@ -16,7 +15,4 @@ public interface GanpatiRepository extends JpaRepository<Ganpati, String> {
 
     @Query("SELECT g FROM Ganpati g WHERE g.isActive = true AND g.availableSlots > 0")
     List<Ganpati> findAvailableGanpati();
-
-    @Query("SELECT g FROM Ganpati g WHERE g.name LIKE %:keyword% AND g.isActive = true")
-    List<Ganpati> searchByName(@Param("keyword") String keyword);
 }

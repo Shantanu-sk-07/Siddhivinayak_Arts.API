@@ -34,9 +34,6 @@ public class Ganpati {
     @Column(nullable = false)
     private String colorTheme;
 
-    @Column(length = 1000)
-    private String description;
-
     @ElementCollection
     @CollectionTable(name = "ganpati_images", joinColumns = @JoinColumn(name = "ganpati_id"))
     @Column(name = "image_url", columnDefinition = "TEXT")
@@ -49,20 +46,15 @@ public class Ganpati {
 
     private Double rating = 0.0;
 
-    @ElementCollection
-    @CollectionTable(name = "ganpati_achievements", joinColumns = @JoinColumn(name = "ganpati_id"))
-    @Column(name = "achievement")
-    private List<String> achievements = new ArrayList<>();
-
     @Column(nullable = false)
     private Boolean isActive = true;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_user_id")
-    private User createdBy;
+    private Integer likes = 0;
 
-    @Column(name = "created_by_user_email")
-    private String createdByUserEmail;
+    @ElementCollection
+    @CollectionTable(name = "ganpati_likes", joinColumns = @JoinColumn(name = "ganpati_id"))
+    @Column(name = "customer_id")
+    private List<String> likedBy = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -71,6 +63,12 @@ public class Ganpati {
     public void prePersist() {
         if (availableSlots == null) {
             availableSlots = totalSlots;
+        }
+        if (likes == null) {
+            likes = 0;
+        }
+        if (likedBy == null) {
+            likedBy = new ArrayList<>();
         }
     }
 }

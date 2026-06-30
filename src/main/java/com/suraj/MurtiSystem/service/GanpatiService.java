@@ -4,14 +4,10 @@ import com.suraj.MurtiSystem.dto.request.GanpatiRequestDto;
 import com.suraj.MurtiSystem.dto.response.ApiResponse;
 import com.suraj.MurtiSystem.dto.response.GanpatiResponseDto;
 import com.suraj.MurtiSystem.entity.Ganpati;
-import com.suraj.MurtiSystem.entity.User;
-import com.suraj.MurtiSystem.repository.BookingRepository;
 import com.suraj.MurtiSystem.repository.GanpatiRepository;
-import com.suraj.MurtiSystem.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.*;
@@ -19,27 +15,14 @@ import java.util.stream.Collectors;
 
 @Service
 public class GanpatiService {
-
     @Autowired
     private GanpatiRepository ganpatiRepository;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private CloudinaryService cloudinaryService;
 
     @Autowired
-    private BookingRepository bookingRepository;
-
-    @Autowired
     private ModelMapper modelMapper;
-
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-    }
 
     public ApiResponse<List<GanpatiResponseDto>> getAllGanpati() {
         List<Ganpati> ganpatiList = ganpatiRepository.findByIsActiveTrue();
@@ -67,10 +50,7 @@ public class GanpatiService {
 
     public ApiResponse<GanpatiResponseDto> createGanpati(GanpatiRequestDto request) {
         try {
-            User currentUser = getCurrentUser();
             Ganpati entity = mapToEntity(request);
-            entity.setCreatedBy(currentUser);
-            entity.setCreatedByUserEmail(currentUser.getEmail());
 
             List<String> imageUrls = uploadImages(request.getImages(), "ganpati_images");
             entity.setImages(imageUrls != null ? imageUrls : new ArrayList<>());
@@ -89,7 +69,6 @@ public class GanpatiService {
             if (existingOpt.isEmpty()) {
                 return ApiResponse.error("Ganpati not found");
             }
-
             Ganpati existing = existingOpt.get();
             updateEntity(existing, request);
 
@@ -115,15 +94,10 @@ public class GanpatiService {
             if (ganpatiOpt.isEmpty()) {
                 return ApiResponse.error("Ganpati not found");
             }
-
             Ganpati ganpati = ganpatiOpt.get();
-
-            bookingRepository.deleteByGanpatiId(id);
-
             if (ganpati.getImages() != null && !ganpati.getImages().isEmpty()) {
                 cloudinaryService.deleteFiles(ganpati.getImages());
             }
-
             ganpatiRepository.deleteById(id);
             return ApiResponse.success(null, "Ganpati deleted successfully");
         } catch (Exception e) {
@@ -131,11 +105,38 @@ public class GanpatiService {
         }
     }
 
+    public ApiResponse<Map<String, Object>> toggleLike(String id, String customerId) {
+        Ganpati ganpati = ganpatiRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ganpati not found"));
+
+        if (ganpati.getLikedBy() == null) {
+            ganpati.setLikedBy(new ArrayList<>());
+        }
+        if (ganpati.getLikes() == null) {
+            ganpati.setLikes(0);
+        }
+
+        if (ganpati.getLikedBy().contains(customerId)) {
+            ganpati.getLikedBy().remove(customerId);
+            ganpati.setLikes(ganpati.getLikes() - 1);
+        } else {
+            ganpati.getLikedBy().add(customerId);
+            ganpati.setLikes(ganpati.getLikes() + 1);
+        }
+
+        Ganpati updated = ganpatiRepository.save(ganpati);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("likes", updated.getLikes());
+        result.put("likedBy", updated.getLikedBy());
+
+        return ApiResponse.success(result);
+    }
+
     private List<String> uploadImages(List<MultipartFile> files, String folder) {
         if (files == null || files.isEmpty()) {
             return Collections.emptyList();
         }
-
         List<String> uploadedUrls = new ArrayList<>();
         for (MultipartFile file : files) {
             try {
@@ -151,16 +152,13 @@ public class GanpatiService {
     private List<String> syncImages(List<String> existingImages, List<MultipartFile> newFiles,
                                     List<String> existingUrlsFromRequest, String folder) {
         List<String> finalUrls = new ArrayList<>();
-
         if (existingUrlsFromRequest != null) {
             finalUrls.addAll(existingUrlsFromRequest);
         }
-
         if (newFiles != null && !newFiles.isEmpty()) {
             List<String> newUploads = uploadImages(newFiles, folder);
             finalUrls.addAll(newUploads);
         }
-
         if (existingImages != null && !existingImages.isEmpty()) {
             List<String> urlsToDelete = existingImages.stream()
                     .filter(url -> !finalUrls.contains(url))
@@ -169,7 +167,6 @@ public class GanpatiService {
                 cloudinaryService.deleteFiles(urlsToDelete);
             }
         }
-
         return finalUrls;
     }
 
@@ -180,9 +177,7 @@ public class GanpatiService {
         entity.setPrice(dto.getPrice());
         entity.setMaterial(dto.getMaterial());
         entity.setColorTheme(dto.getColorTheme());
-        entity.setDescription(dto.getDescription());
         entity.setTotalSlots(dto.getTotalSlots());
-        entity.setAchievements(dto.getAchievements() != null ? dto.getAchievements() : new ArrayList<>());
         entity.setIsActive(dto.getIsActive());
         return entity;
     }
@@ -193,9 +188,7 @@ public class GanpatiService {
         entity.setPrice(dto.getPrice());
         entity.setMaterial(dto.getMaterial());
         entity.setColorTheme(dto.getColorTheme());
-        entity.setDescription(dto.getDescription());
         entity.setTotalSlots(dto.getTotalSlots());
-        entity.setAchievements(dto.getAchievements() != null ? dto.getAchievements() : new ArrayList<>());
         entity.setIsActive(dto.getIsActive());
     }
 
@@ -203,6 +196,8 @@ public class GanpatiService {
         GanpatiResponseDto response = new GanpatiResponseDto();
         modelMapper.map(entity, response);
         response.setImages(entity.getImages());
+        response.setLikes(entity.getLikes());
+        response.setLikedBy(entity.getLikedBy());
         return response;
     }
 }

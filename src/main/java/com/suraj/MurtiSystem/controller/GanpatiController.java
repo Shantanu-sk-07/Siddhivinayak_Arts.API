@@ -6,12 +6,11 @@ import com.suraj.MurtiSystem.service.GanpatiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ganpati")
-@CrossOrigin(origins = "*")
 public class GanpatiController {
-
     @Autowired
     private GanpatiService ganpatiService;
 
@@ -28,5 +27,10 @@ public class GanpatiController {
     @GetMapping("/{id}")
     public ApiResponse<GanpatiResponseDto> getGanpatiById(@PathVariable String id) {
         return ganpatiService.getGanpatiById(id);
+    }
+
+    @PostMapping("/{id}/like")
+    public ApiResponse<Map<String, Object>> toggleLike(@PathVariable String id, @RequestParam String userId) {
+        return ganpatiService.toggleLike(id, userId);
     }
 }
