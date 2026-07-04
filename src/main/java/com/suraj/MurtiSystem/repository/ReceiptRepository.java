@@ -13,4 +13,5 @@ public interface ReceiptRepository extends JpaRepository<Receipt, String> {
 
     @Query("SELECT r FROM Receipt r WHERE r.token = :token AND r.isActive = true")
     Optional<Receipt> findValidByToken(@Param("token") String token);
+    Optional<Receipt> findByBooking_Id(String bookingId);
 }

@@ -38,13 +38,18 @@ public class ReceiptService {
             ConfirmedBooking booking = bookingRepository.findById(bookingId)
                     .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-            byte[] pdfBytes = pdfGeneratorService.generateReceiptPdf(booking);
+            // Check if a receipt already exists for this booking — reuse/update it instead of inserting a duplicate
+            Receipt receipt = receiptRepository.findByBooking_Id(bookingId).orElse(null);
 
+            byte[] pdfBytes = pdfGeneratorService.generateReceiptPdf(booking);
             String pdfUrl = cloudinaryService.uploadFile(pdfBytes, "receipts/" + booking.getReceiptNumber() + ".pdf");
 
-            Receipt receipt = new Receipt();
-            receipt.setToken(generateSecureToken());
-            receipt.setBooking(booking);
+            if (receipt == null) {
+                receipt = new Receipt();
+                receipt.setToken(generateSecureToken());
+                receipt.setBooking(booking);
+                receipt.setIsActive(true);
+            }
             receipt.setPdfPath(pdfUrl);
             receipt.setIsActive(true);
 
