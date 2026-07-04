@@ -44,6 +44,7 @@ public class SecurityConfig {
                         // Admin endpoints - require SUPER_ADMIN role
                         .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/share/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/admin/bookings/*/generate-receipt").hasRole("SUPER_ADMIN")
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
