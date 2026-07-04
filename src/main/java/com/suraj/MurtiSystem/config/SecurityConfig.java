@@ -41,11 +41,10 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/static/**"
                         ).permitAll()
-                        // Admin endpoints - require SUPER_ADMIN role
                         .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/share/**").hasRole("SUPER_ADMIN")
-                        .requestMatchers("/api/admin/bookings/*/generate-receipt").hasRole("SUPER_ADMIN")
-                        // All other endpoints require authentication
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/receipt/generate/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/receipt/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
