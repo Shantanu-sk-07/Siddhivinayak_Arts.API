@@ -46,9 +46,9 @@ ENV SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE="20MB"
 ENV SPRING_THYMELEAF_CACHE="false"
 
 # Java Options
-ENV JAVA_OPTS="-Xmx1536m -Xms512m -XX:+UseG1GC"
+ENV JAVA_OPTS="-Xmx256m -Xss512k -XX:MaxMetaspaceSize=100m -XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0"
 
 EXPOSE 8080
 
 # Run the application
-CMD ["java", "-Xmx256m", "-Xss512k", "-XX:MaxMetaspaceSize=100m", "-jar", "app.jar"]
+CMD ["sh", "-c", "java $JAVA_OPTS -jar target/*.jar"]
