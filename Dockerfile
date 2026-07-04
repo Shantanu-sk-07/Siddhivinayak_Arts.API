@@ -51,4 +51,4 @@ ENV JAVA_OPTS="-Xmx1536m -Xms512m -XX:+UseG1GC"
 EXPOSE 8080
 
 # Run the application
-CMD ["sh", "-c", "java $JAVA_OPTS -jar target/*.jar"]
+CMD ["java", "-Xmx256m", "-Xss512k", "-XX:MaxMetaspaceSize=100m", "-jar", "app.jar"]
