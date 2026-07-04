@@ -4,14 +4,17 @@ import com.suraj.MurtiSystem.dto.request.ConfirmedBookingRequestDto;
 import com.suraj.MurtiSystem.dto.response.ApiResponse;
 import com.suraj.MurtiSystem.dto.response.ConfirmedBookingResponseDto;
 import com.suraj.MurtiSystem.dto.response.GanpatiResponseDto;
+import com.suraj.MurtiSystem.dto.response.ReceiptResponseDto;
 import com.suraj.MurtiSystem.entity.ConfirmedBooking;
 import com.suraj.MurtiSystem.entity.ConfirmedBooking.BookingContact;
 import com.suraj.MurtiSystem.entity.ConfirmedBooking.PaymentRecord;
 import com.suraj.MurtiSystem.entity.Customer;
 import com.suraj.MurtiSystem.entity.Ganpati;
+import com.suraj.MurtiSystem.entity.Receipt;
 import com.suraj.MurtiSystem.repository.ConfirmedBookingRepository;
 import com.suraj.MurtiSystem.repository.CustomerRepository;
 import com.suraj.MurtiSystem.repository.GanpatiRepository;
+import com.suraj.MurtiSystem.repository.ReceiptRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,8 +40,20 @@ public class BookingService {
     @Autowired
     private GanpatiRepository ganpatiRepository;
 
+    @Autowired
+    private ReceiptRepository receiptRepository;
+
+    @Autowired
+    private PdfGeneratorService pdfGeneratorService;
+
+    @Autowired
+    private CloudinaryService cloudinaryService;
+
     @Value("${admin.whatsapp.number}")
     private String adminWhatsAppNumber;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     public ApiResponse<List<ConfirmedBookingResponseDto>> getAllBookings() {
         List<ConfirmedBooking> bookings = bookingRepository.findAllOrderByDateDesc();
@@ -154,6 +170,38 @@ public class BookingService {
             return ApiResponse.success(encodedMessage, "पावती " + phoneNumbers.size() + " नंबरवर पाठवली गेली");
         } catch (Exception e) {
             return ApiResponse.error("व्हॉट्सअॅप लिंक तयार करण्यात अयशस्वी: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public ApiResponse<ReceiptResponseDto> generateReceipt(String bookingId) {
+        try {
+            ConfirmedBooking booking = findBookingById(bookingId);
+
+            byte[] pdfBytes = pdfGeneratorService.generateReceiptPdf(booking);
+
+            String pdfUrl = cloudinaryService.uploadFile(pdfBytes, "receipts/" + booking.getReceiptNumber() + ".pdf");
+
+            Receipt receipt = new Receipt();
+            receipt.setToken(generateSecureToken());
+            receipt.setBooking(booking);
+            receipt.setPdfPath(pdfUrl);
+            receipt.setIsActive(true);
+
+            Receipt saved = receiptRepository.save(receipt);
+
+            ReceiptResponseDto response = new ReceiptResponseDto();
+            response.setId(saved.getId());
+            response.setToken(saved.getToken());
+            response.setReceiptUrl(baseUrl + "/receipt/" + saved.getToken());
+            response.setBookingId(booking.getId());
+            response.setPdfPath(pdfUrl);
+            response.setCreatedDate(saved.getCreatedDate());
+            response.setIsActive(saved.getIsActive());
+
+            return ApiResponse.success(response, "Receipt generated successfully");
+        } catch (Exception e) {
+            return ApiResponse.error("Failed to generate receipt: " + e.getMessage());
         }
     }
 
@@ -365,6 +413,12 @@ public class BookingService {
                 paymentHistory.toString(),
                 booking.getBookingDate() != null ? booking.getBookingDate() : date
         );
+    }
+
+    private String generateSecureToken() {
+        return UUID.randomUUID().toString().replace("-", "") +
+                System.currentTimeMillis() +
+                UUID.randomUUID().toString().substring(0, 8);
     }
 
     private ConfirmedBookingResponseDto mapToBookingResponse(ConfirmedBooking booking) {

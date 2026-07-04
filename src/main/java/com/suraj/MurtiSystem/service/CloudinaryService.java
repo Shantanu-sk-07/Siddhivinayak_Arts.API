@@ -53,6 +53,22 @@ public class CloudinaryService {
         }
     }
 
+    public String uploadFile(byte[] fileBytes, String publicId) {
+        try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                    fileBytes,
+                    ObjectUtils.asMap(
+                            "public_id", publicId,
+                            "resource_type", "raw",
+                            "folder", "receipts"
+                    )
+            );
+            return uploadResult.get("secure_url").toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
+        }
+    }
+
     private String extractPublicIdFromUrl(String url) {
         try {
             String[] parts = url.split("/upload/");

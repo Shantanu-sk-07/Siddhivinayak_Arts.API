@@ -5,6 +5,7 @@ import com.suraj.MurtiSystem.dto.request.ConfirmedBookingRequestDto;
 import com.suraj.MurtiSystem.dto.response.ApiResponse;
 import com.suraj.MurtiSystem.dto.response.GanpatiResponseDto;
 import com.suraj.MurtiSystem.dto.response.ConfirmedBookingResponseDto;
+import com.suraj.MurtiSystem.dto.response.ReceiptResponseDto;
 import com.suraj.MurtiSystem.service.GanpatiService;
 import com.suraj.MurtiSystem.service.BookingService;
 import jakarta.validation.Valid;
@@ -72,5 +73,10 @@ public class AdminController {
     @PostMapping("/bookings/{id}/send-receipt")
     public ApiResponse<String> sendReceiptToWhatsApp(@PathVariable String id) {
         return bookingService.sendReceiptToWhatsApp(id);
+    }
+
+    @PostMapping("/bookings/{id}/generate-receipt")
+    public ApiResponse<ReceiptResponseDto> generateReceipt(@PathVariable String id) {
+        return bookingService.generateReceipt(id);
     }
 }
