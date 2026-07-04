@@ -32,19 +32,18 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                // Public endpoints - no authentication required
                                 "/api/auth/**",
                                 "/api/ganpati/**",
                                 "/api/contact",
-                                "/api/customers/**",  // Allow all customer endpoints (only register exists)
+                                "/api/customers/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/static/**"
                         ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/receipt/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/receipt/generate/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/share/**").hasRole("SUPER_ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/receipt/generate/**").hasRole("SUPER_ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/receipt/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

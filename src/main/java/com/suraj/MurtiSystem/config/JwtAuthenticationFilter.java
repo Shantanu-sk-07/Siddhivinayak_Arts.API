@@ -32,13 +32,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        // Public endpoints — no token required
         if (path.startsWith("/api/auth") ||
                 path.startsWith("/api/ganpati") ||
                 path.startsWith("/api/contact") ||
                 path.startsWith("/api/customers") ||
                 path.startsWith("/swagger-ui") ||
-                path.startsWith("/v3/api-docs")) {
+                path.startsWith("/v3/api-docs") ||
+                (request.getMethod().equals("GET") && path.startsWith("/api/receipt"))) {
             chain.doFilter(request, response);
             return;
         }
