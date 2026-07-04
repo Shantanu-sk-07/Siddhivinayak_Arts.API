@@ -46,7 +46,7 @@ ENV SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE="20MB"
 ENV SPRING_THYMELEAF_CACHE="false"
 
 # Java Options
-ENV JAVA_OPTS="-Xmx256m -Xss512k -XX:MaxMetaspaceSize=100m -XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0"
+ENV JAVA_OPTS="-Xmx256m -XX:MaxMetaspaceSize=200m -XX:MetaspaceSize=100m -XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0"
 
 EXPOSE 8080
 
