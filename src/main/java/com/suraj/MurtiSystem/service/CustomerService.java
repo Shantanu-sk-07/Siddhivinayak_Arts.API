@@ -29,11 +29,25 @@ public class CustomerService {
     @Autowired
     private GanpatiRepository ganpatiRepository;
 
+    private ApiResponse<CustomerRegisterResponse> validatePhoneNumbers(CustomerRegisterRequest request) {
+        if (request.getAlternatePhone() != null && !request.getAlternatePhone().isEmpty()) {
+            if (request.getAlternatePhone().equals(request.getPhone())) {
+                return ApiResponse.error("Alternate phone cannot be same as main phone");
+            }
+        }
+        return null;
+    }
+
     @Transactional
     public ApiResponse<CustomerRegisterResponse> registerCustomer(CustomerRegisterRequest request) {
         try {
             logger.info("=== PUBLIC REGISTER CUSTOMER ===");
             logger.info("Name: {}, Phone: {}, Type: {}", request.getName(), request.getPhone(), request.getRegistrationType());
+
+            ApiResponse<CustomerRegisterResponse> phoneValidation = validatePhoneNumbers(request);
+            if (phoneValidation != null) {
+                return phoneValidation;
+            }
 
             if (customerRepository.existsByPhone(request.getPhone())) {
                 Customer existing = customerRepository.findByPhone(request.getPhone()).get();
@@ -67,6 +81,11 @@ public class CustomerService {
         try {
             logger.info("=== ADMIN CREATE CUSTOMER ===");
             logger.info("Name: {}, Phone: {}, Type: {}", request.getName(), request.getPhone(), request.getRegistrationType());
+
+            ApiResponse<CustomerRegisterResponse> phoneValidation = validatePhoneNumbers(request);
+            if (phoneValidation != null) {
+                return phoneValidation;
+            }
 
             if (customerRepository.existsByPhone(request.getPhone())) {
                 Customer existing = customerRepository.findByPhone(request.getPhone()).get();
@@ -143,6 +162,11 @@ public class CustomerService {
         try {
             logger.info("=== UPDATE CUSTOMER: {} ===", id);
             Customer existing = findCustomerById(id);
+
+            ApiResponse<CustomerRegisterResponse> phoneValidation = validatePhoneNumbers(request);
+            if (phoneValidation != null) {
+                return phoneValidation;
+            }
 
             if (!existing.getPhone().equals(request.getPhone())) {
                 if (customerRepository.existsByPhone(request.getPhone())) {
