@@ -2,6 +2,7 @@ package com.suraj.MurtiSystem.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -40,8 +41,9 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/static/**"
                         ).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/receipt/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/receipt/generate/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/receipt/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/share/collection/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/receipt/generate/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/share/**").hasRole("SUPER_ADMIN")
                         .anyRequest().authenticated()

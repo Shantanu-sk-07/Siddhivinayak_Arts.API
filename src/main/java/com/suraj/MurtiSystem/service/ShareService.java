@@ -49,17 +49,12 @@ public class ShareService {
             shareCollection.setCreatedBy(admin);
             shareCollection.setIsActive(true);
 
-            if (request.getExpiryDays() != null && request.getExpiryDays() > 0) {
-                shareCollection.setExpiryDate(LocalDateTime.now().plusDays(request.getExpiryDays()));
-            }
-
             ShareCollection saved = shareCollectionRepository.save(shareCollection);
 
             if (request.getGanpatiIds() != null) {
                 for (String ganpatiId : request.getGanpatiIds()) {
                     Ganpati ganpati = ganpatiRepository.findById(ganpatiId)
                             .orElseThrow(() -> new RuntimeException("Ganpati not found: " + ganpatiId));
-
                     ShareCollectionGanpati collectionGanpati = new ShareCollectionGanpati();
                     collectionGanpati.setShareCollection(saved);
                     collectionGanpati.setGanpati(ganpati);
@@ -71,7 +66,6 @@ public class ShareService {
                 for (String customerId : request.getCustomerIds()) {
                     Customer customer = customerRepository.findById(customerId)
                             .orElseThrow(() -> new RuntimeException("Customer not found: " + customerId));
-
                     ShareCollectionCustomer collectionCustomer = new ShareCollectionCustomer();
                     collectionCustomer.setShareCollection(saved);
                     collectionCustomer.setCustomer(customer);
@@ -90,15 +84,19 @@ public class ShareService {
 
     public ApiResponse<ShareCollectionResponseDto> getShareCollection(String token) {
         try {
-            ShareCollection shareCollection = shareCollectionRepository.findValidByToken(token)
-                    .orElseThrow(() -> new RuntimeException("Invalid or expired link"));
+            ShareCollection shareCollection = shareCollectionRepository.findByToken(token)
+                    .orElseThrow(() -> new RuntimeException("Invalid link"));
+
+            if (!shareCollection.getIsActive()) {
+                return ApiResponse.error("This link has been deactivated.");
+            }
 
             ShareCollectionResponseDto response = mapToResponse(shareCollection);
             response.setShareUrl(baseUrl + "/view/" + token);
 
             return ApiResponse.success(response);
         } catch (Exception e) {
-            return ApiResponse.error("Invalid or expired link");
+            return ApiResponse.error("Invalid or deactivated link");
         }
     }
 
@@ -106,10 +104,8 @@ public class ShareService {
         try {
             ShareCollection shareCollection = shareCollectionRepository.findByToken(token)
                     .orElseThrow(() -> new RuntimeException("Share collection not found"));
-
             shareCollection.setIsActive(false);
             shareCollectionRepository.save(shareCollection);
-
             return ApiResponse.success(null, "Share collection deactivated");
         } catch (Exception e) {
             return ApiResponse.error("Failed to deactivate: " + e.getMessage());
@@ -128,7 +124,7 @@ public class ShareService {
         dto.setToken(shareCollection.getToken());
         dto.setCreatedBy(shareCollection.getCreatedBy().getName());
         dto.setCreatedDate(shareCollection.getCreatedDate());
-        dto.setExpiryDate(shareCollection.getExpiryDate());
+        dto.setExpiryDate(null);
         dto.setIsActive(shareCollection.getIsActive());
 
         List<String> ganpatiIds = shareCollection.getGanpatis().stream()
