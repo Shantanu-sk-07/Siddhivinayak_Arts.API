@@ -29,7 +29,6 @@ public class CustomerService {
     @Autowired
     private GanpatiRepository ganpatiRepository;
 
-    // ========== PUBLIC REGISTRATION ==========
     @Transactional
     public ApiResponse<CustomerRegisterResponse> registerCustomer(CustomerRegisterRequest request) {
         try {
@@ -63,7 +62,6 @@ public class CustomerService {
         }
     }
 
-    // ========== ADMIN CREATE ==========
     @Transactional
     public ApiResponse<CustomerRegisterResponse> createCustomer(CustomerRegisterRequest request) {
         try {
@@ -93,7 +91,6 @@ public class CustomerService {
         }
     }
 
-    // ========== GET ALL CUSTOMERS ==========
     public ApiResponse<List<CustomerRegisterResponse>> getAllCustomers() {
         try {
             logger.info("=== GET ALL CUSTOMERS ===");
@@ -115,7 +112,6 @@ public class CustomerService {
         }
     }
 
-    // ========== GET CUSTOMER BY ID ==========
     public ApiResponse<CustomerRegisterResponse> getCustomerById(String id) {
         try {
             Customer customer = findCustomerById(id);
@@ -125,7 +121,6 @@ public class CustomerService {
         }
     }
 
-    // ========== GET CUSTOMERS BY TYPE ==========
     public ApiResponse<List<CustomerRegisterResponse>> getCustomersByType(String type) {
         try {
             Customer.RegistrationType registrationType;
@@ -143,12 +138,17 @@ public class CustomerService {
         }
     }
 
-    // ========== UPDATE CUSTOMER ==========
     @Transactional
     public ApiResponse<CustomerRegisterResponse> updateCustomer(String id, CustomerRegisterRequest request) {
         try {
             logger.info("=== UPDATE CUSTOMER: {} ===", id);
             Customer existing = findCustomerById(id);
+
+            if (!existing.getPhone().equals(request.getPhone())) {
+                if (customerRepository.existsByPhone(request.getPhone())) {
+                    return ApiResponse.error("Mobile number already exists");
+                }
+            }
 
             existing.setName(request.getName());
             existing.setPhone(request.getPhone());
@@ -194,7 +194,6 @@ public class CustomerService {
         }
     }
 
-    // ========== DELETE CUSTOMER ==========
     @Transactional
     public ApiResponse<Void> deleteCustomer(String id) {
         try {
@@ -210,7 +209,6 @@ public class CustomerService {
         }
     }
 
-    // ========== PROMOTE CUSTOMER ==========
     @Transactional
     public ApiResponse<CustomerRegisterResponse> promoteCustomer(String id) {
         try {
@@ -231,7 +229,6 @@ public class CustomerService {
         }
     }
 
-    // ========== UNPROMOTE CUSTOMER ==========
     @Transactional
     public ApiResponse<CustomerRegisterResponse> unpromoteCustomer(String id) {
         try {
@@ -246,8 +243,6 @@ public class CustomerService {
             return ApiResponse.error("प्रमोट रद्द करण्यात अयशस्वी: " + e.getMessage());
         }
     }
-
-    // ========== PRIVATE METHODS ==========
 
     private Customer findCustomerById(String id) {
         return customerRepository.findById(id)
