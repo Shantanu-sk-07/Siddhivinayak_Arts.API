@@ -34,6 +34,12 @@ public class CustomerService {
             if (request.getAlternatePhone().equals(request.getPhone())) {
                 return ApiResponse.error("Alternate phone cannot be same as main phone");
             }
+            if (customerRepository.existsByPhone(request.getAlternatePhone())) {
+                return ApiResponse.error("Alternate mobile number already exists");
+            }
+            if (customerRepository.existsByAlternatePhone(request.getAlternatePhone())) {
+                return ApiResponse.error("Alternate mobile number already exists");
+            }
         }
         return null;
     }
@@ -171,6 +177,17 @@ public class CustomerService {
             if (!existing.getPhone().equals(request.getPhone())) {
                 if (customerRepository.existsByPhone(request.getPhone())) {
                     return ApiResponse.error("Mobile number already exists");
+                }
+            }
+
+            if (request.getAlternatePhone() != null && !request.getAlternatePhone().isEmpty()) {
+                if (!request.getAlternatePhone().equals(existing.getAlternatePhone())) {
+                    if (customerRepository.existsByPhone(request.getAlternatePhone())) {
+                        return ApiResponse.error("Alternate mobile number already exists");
+                    }
+                    if (customerRepository.existsByAlternatePhone(request.getAlternatePhone())) {
+                        return ApiResponse.error("Alternate mobile number already exists");
+                    }
                 }
             }
 
